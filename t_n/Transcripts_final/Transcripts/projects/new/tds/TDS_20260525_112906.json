@@ -1,0 +1,51 @@
+{
+  "project": "new",
+  "generated_at": "2026-05-25T11:29:26",
+  "source_card": "C:\\Users\\harya\\Desktop\\new 1\\Transcripts_final\\Transcripts\\projects\\new\\cards\\fds_a2a_card_new.json",
+  "section_plan": [
+    {
+      "title": "User Experience",
+      "diagram_type": "flowchart TD",
+      "focus": "Customer ordering workflow and store manager order management workflow"
+    },
+    {
+      "title": "Functional Features",
+      "diagram_type": "flowchart TD",
+      "focus": "Core functionalities including product catalog, shopping cart, and payment processing"
+    },
+    {
+      "title": "Data Architecture",
+      "diagram_type": "erDiagram",
+      "focus": "Data requirements including product and order data structures"
+    },
+    {
+      "title": "Integration Points",
+      "diagram_type": "flowchart TD",
+      "focus": "Integration with payment gateway, inventory management system, and user authentication service"
+    },
+    {
+      "title": "Security Protocols",
+      "diagram_type": "flowchart TD",
+      "focus": "Implementation of OTP-based authentication and security measures for data protection"
+    },
+    {
+      "title": "Business Rules",
+      "diagram_type": "flowchart TD",
+      "focus": "Rules governing customer orders, authentication, and store manager access rights"
+    },
+    {
+      "title": "Requirement Pseudocode",
+      "diagram_type": "text",
+      "focus": "Structured pseudocode for the implemented requirement flow based on FDS."
+    }
+  ],
+  "sections": {
+    "User Experience": "flowchart TD\n    A[Customer Mobile App] -->|Open App| B[Browse Products]\n    B -->|Select Product| C[Add to Cart]\n    C -->|Select Delivery Slot| D[Proceed to Payment]\n    D -->|Confirm Payment| E[Complete Order]\n    F[Admin Panel] -->|Log In| G[View Incoming Orders]\n    G -->|Update Order Status| H[Manage Inventory]",
+    "Functional Features": "flowchart TD\n    A[Product Catalog] -->|Browse Products| B[Shopping Cart]\n    B -->|Add/Remove Items| C[Payment Processing]\n    C -->|Enter Payment Info| D[Payment Confirmation]\n    D -->|Transaction Complete| E[Order Complete]",
+    "Data Architecture": "erDiagram\n    Product {\n        Integer ProductID PK \"Unique identifier\"\n        String ProductName \"Name of the product\"\n        Decimal Price \"Price of the product\"\n        Integer Quantity \"Available quantity\"\n    }\n    Order {\n        Integer OrderID PK \"Unique identifier\"\n        Integer UserID \"Identifier for the user placing the order\"\n    }\n    User {\n        Integer UserID PK \"Unique identifier\"\n        String UserName \"Registered user's name\"\n    }\n    Product ||--o{ Order : contains\n    User ||--o{ Order : places",
+    "Integration Points": "flowchart TD\n    A[Customer Mobile App] -->|Integrate| B[Online Payment Gateway]\n    A -->|Integrate| C[Inventory Management System]\n    A -->|Integrate| D[User Authentication Service]",
+    "Security Protocols": "flowchart TD\n    A[User Login] -->|Request OTP| B[Generate OTP]\n    B -->|Send OTP| C[User Receives OTP]\n    C -->|Enter OTP| D[Validate OTP]\n    D -->|Authentication Success| E[Access Granted]\n    D -->|Authentication Failure| F[Access Denied]\n    G[Data Protection] -->|Encrypt Data| H[Secure Data Storage]\n    G -->|Implement Security Audits| I[Regular Security Checks]",
+    "Business Rules": "flowchart TD\n    A[Customer Orders] -->|From Specified Stores| B[Five Stores in Hyderabad]\n    A -->|Must Authenticate| C[OTP for Access]\n    D[Store Managers] -->|Manage Orders| E[Distinct Access Rights]\n    D -->|View Inventory| F[Manage Inventory]",
+    "Requirement Pseudocode": "Requirement Pseudocode\n\nFlow: Customer Login\nInputs: userId, password\nPreconditions: userId and password must be provided\nSteps:\n    FUNCTION login(userId, password)\n        IF userId EXISTS IN database AND password IS VALID THEN\n            otp = generateOTP(userId)\n            sendOTP(userId, otp)\n            RETURN \"OTP sent to registered mobile number\"\n        ELSE\n            RETURN \"Invalid credentials\"\nPostconditions: User receives OTP\nError Paths:\n    IF userId NOT FOUND THEN\n        RETURN \"User not found\"\n    IF password IS INVALID THEN\n        RETURN \"Incorrect password\"\n\nFlow: OTP Verification\nInputs: userId, enteredOTP\nPreconditions: User must have requested OTP\nSteps:\n    FUNCTION verifyOTP(userId, enteredOTP)\n        storedOTP = getStoredOTP(userId)\n        IF enteredOTP EQUALS storedOTP THEN\n            markUserAsAuthenticated(userId)\n            RETURN \"Login successful\"\n        ELSE\n            RETURN \"Invalid OTP\"\nPostconditions: User is authenticated\nError Paths:\n    IF storedOTP IS NULL THEN\n        RETURN \"OTP not generated or expired\"\n\nFlow: Browse Product Catalog\nInputs: userId\nPreconditions: User must be logged in\nSteps:\n    FUNCTION browseProducts(userId)\n        products = fetchAvailableProducts()\n        IF products IS NOT EMPTY THEN\n            RETURN products\n        ELSE\n            RETURN \"No products available\"\nPostconditions: User receives a list of products\nError Paths:\n    IF products NOT FOUND THEN\n        RETURN \"Error fetching products\"\n\nFlow: Add Item to Cart\nInputs: userId, productId, quantity\nPreconditions: userId must be logged in, productId must exist\nSteps:\n    FUNCTION addToCart(userId, productId, quantity)\n        IF productExists(productId) THEN\n            cartItem = createCartItem(productId, quantity)\n            addItemToUserCart(userId, cartItem)\n            RETURN \"Item added to cart\"\n        ELSE\n            RETURN \"Product not found\"\nPostconditions: Item is added to the user's cart\nError Paths:\n    IF quantity IS LESS THAN 1 THEN\n        RETURN \"Invalid quantity\"\n\nFlow: Process Payment\nInputs: userId, paymentDetails\nPreconditions: User must have items in the cart\nSteps:\n    FUNCTION processPayment(userId, paymentDetails)\n        IF cartIsNotEmpty(userId) THEN\n            paymentResult = initiatePayment(paymentDetails)\n            IF paymentResult IS SUCCESS THEN\n                clearUserCart(userId)\n                RETURN \"Payment successful, order placed\"\n            ELSE\n                RETURN \"Payment failed\"\n        ELSE\n            RETURN \"Cart is empty\"\nPostconditions: Payment is processed\nError Paths:\n    IF paymentDetails ARE INVALID THEN\n        RETURN \"Invalid payment details\""
+  }
+}

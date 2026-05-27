@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MCP GitHub Client - Integrated</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1000px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-btn:hover {
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .tool-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .tool-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .results {
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .result-item {
+            background: white;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .repo-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 500;
+            padding: 20px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #27ae60;
+        }
+        
+        pre {
+            background: #f5f7fa;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-primary {
+            flex: 1;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 MCP GitHub Client</h1>
+            <p class="subtitle">Integrated with your Flask app</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('quick')">⚡ Quick Actions</button>
+            <button class="tab-btn" onclick="switchTab('repos')">📦 Repositories</button>
+            <button class="tab-btn" onclick="switchTab('advanced')">⚙️ Advanced</button>
+        </div>
+        
+        <!-- Quick Actions Tab -->
+        <div id="quick" class="tab-content active">
+            <div class="tools-grid">
+                <button class="tool-btn" onclick="listRepos()">📦 List Repos</button>
+                <button class="tool-btn" onclick="showRepoForm()">➕ Create Repo</button>
+                <button class="tool-btn" onclick="showIssueForm()">📋 Create Issue</button>
+                <button class="tool-btn" onclick="showBranchForm()">🌿 Create Branch</button>
+            </div>
+            <div class="results" id="results-quick">
+                <p style="color: #999; text-align: center;">Results will appear here</p>
+            </div>
+        </div>
+        
+        <!-- Repositories Tab -->
+        <div id="repos" class="tab-content">
+            <div class="tools-grid">
+                <button class="tool-btn" onclick="listRepos()">🔄 Refresh List</button>
+                <button class="tool-btn" onclick="showRepoForm()">➕ Create New</button>
+            </div>
+            <div class="results" id="results-repos">
+                <p style="color: #999; text-align: center;">Click "Refresh List" to load repositories</p>
+            </div>
+        </div>
+        
+        <!-- Advanced Tab -->
+        <div id="advanced" class="tab-content">
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #333;">Push Code to GitHub</h3>
+                
+                <div class="form-group">
+                    <label>Repository Name</label>
+                    <input type="text" id="push-repo" placeholder="e.g., my-project">
+                </div>
+                
+                <div class="form-group">
+                    <label>File Path</label>
+                    <input type="text" id="push-path" placeholder="e.g., src/main.py">
+                </div>
+                
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea id="push-content" placeholder="Paste your code here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Commit Message</label>
+                    <input type="text" id="push-message" placeholder="e.g., Add new feature" value="Update from MCP client">
+                </div>
+                
+                <button class="btn-primary" onclick="pushCode()">📤 Push Code</button>
+            </div>
+            
+            <div class="results" id="results-advanced">
+                <p style="color: #999; text-align: center;">Results will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Update button styles
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function updateResults(content, tab = 'quick') {
+            document.getElementById(`results-${tab}`).innerHTML = content;
+        }
+        
+        async function listRepos() {
+            updateResults('<p class="loading">📦 Fetching repositories...</p>', 'repos');
+            try {
+                const response = await fetch('/api/mcp/repos');
+                const data = await response.json();
+                
+                if (data.error) {
+                    updateResults(`<div class="error">❌ Error: ${data.error}</div>`, 'repos');
+                    return;
+                }
+                
+                let html = '<div class="success">✅ GitHub Repositories:</div>';
+                if (data.repositories && data.repositories.length > 0) {
+                    data.repositories.forEach(repo => {
+                        html += `<div class="result-item">
+                            <div class="repo-name">📍 ${repo.name}</div>
+                            <small>${repo.description || 'No description'}</small>
+                        </div>`;
+                    });
+                } else {
+                    html += '<p style="padding: 10px;">No repositories found</p>';
+                }
+                updateResults(html, 'repos');
+            } catch (error) {
+                updateResults(`<div class="error">❌ Error: ${error.message}</div>`, 'repos');
+            }
+        }
+        
+        function showRepoForm() {
+            const repoName = prompt('Repository name:');
+            if (!repoName) return;
+            
+            const description = prompt('Description (optional):');
+            const isPrivate = confirm('Make it private?');
+            
+            createRepo(repoName, description, isPrivate);
+        }
+        
+        async function createRepo(name, desc, isPrivate) {
+            updateResults('<p class="loading">➕ Creating repository...</p>', 'quick');
+            try {
+                const response = await fetch('/api/mcp/create-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        description: desc || '',
+                        private: isPrivate
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    updateResults(`<div class="error">❌ Error: ${data.error}</div>`, 'quick');
+                } else {
+                    updateResults(`<div class="success">✅ Repository created: ${name}</div><pre>${JSON.stringify(data, null, 2)}</pre>`, 'quick');
+                }
+            } catch (error) {
+                updateResults(`<div class="error">❌ Error: ${error.message}</div>`, 'quick');
+            }
+        }
+        
+        function showIssueForm() {
+            const repo = prompt('Repository name:');
+            if (!repo) return;
+            
+            const title = prompt('Issue title:');
+            if (!title) return;
+            
+            const body = prompt('Description (optional):');
+            
+            createIssue(repo, title, body);
+        }
+        
+        async function createIssue(repo, title, body) {
+            updateResults('<p class="loading">📋 Creating issue...</p>', 'quick');
+            try {
+                const response = await fetch('/api/mcp/create-issue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        repo: repo,
+                        title: title,
+                        body: body || ''
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    updateResults(`<div class="error">❌ Error: ${data.error}</div>`, 'quick');
+                } else {
+                    updateResults(`<div class="success">✅ Issue created in ${repo}</div>`, 'quick');
+                }
+            } catch (error) {
+                updateResults(`<div class="error">❌ Error: ${error.message}</div>`, 'quick');
+            }
+        }
+        
+        function showBranchForm() {
+            const repo = prompt('Repository name:');
+            if (!repo) return;
+            
+            const branch = prompt('Branch name:');
+            if (!branch) return;
+            
+            createBranch(repo, branch);
+        }
+        
+        async function createBranch(repo, branch) {
+            updateResults('<p class="loading">🌿 Creating branch...</p>', 'quick');
+            try {
+                const response = await fetch('/api/mcp/create-branch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        repo: repo,
+                        branch: branch
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    updateResults(`<div class="error">❌ Error: ${data.error}</div>`, 'quick');
+                } else {
+                    updateResults(`<div class="success">✅ Branch created: ${branch}</div>`, 'quick');
+                }
+            } catch (error) {
+                updateResults(`<div class="error">❌ Error: ${error.message}</div>`, 'quick');
+            }
+        }
+        
+        async function pushCode() {
+            const repo = document.getElementById('push-repo').value;
+            const path = document.getElementById('push-path').value;
+            const content = document.getElementById('push-content').value;
+            const message = document.getElementById('push-message').value;
+            
+            if (!repo || !path || !content) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            updateResults('<p class="loading">📤 Pushing code...</p>', 'advanced');
+            try {
+                const response = await fetch('/api/mcp/push-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        repo: repo,
+                        path: path,
+                        content: content,
+                        message: message
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    updateResults(`<div class="error">❌ Error: ${data.error}</div>`, 'advanced');
+                } else {
+                    updateResults(`<div class="success">✅ Code pushed successfully</div>`, 'advanced');
+                }
+            } catch (error) {
+                updateResults(`<div class="error">❌ Error: ${error.message}</div>`, 'advanced');
+            }
+        }
+    </script>
+</body>
+</html>
