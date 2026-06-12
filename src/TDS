@@ -1,0 +1,99 @@
+Technical Design Specification (TDS)
+new
+Date: 2026-06-11
+Prepared By: H, Arya
+Source A2A Card: BRD_new_20260611_100830_fds_tds_a2a_card.json
+Source FDS: C:\Users\harya\Desktop\new 1\Transcripts_final\Transcripts\projects\new\fds\FDS_20260611_102038.docx
+ 
+1. Document Control
+Version: 1.0
+Status: Draft
+Generated On: 2026-06-11 10:24:04
+Generated From: BRD_new_20260611_100830_fds_tds_a2a_card.json
+2. BRD Requirements (Verbatim)
+Requirement ID	Category	Priority	Requirement (Verbatim from BRD)
+REQ-001	Functional	High	The system must validate DQM quoted orders to ensure they have a deal reference and at least one UCID.
+REQ-002	Functional	High	During quote load, the system must compare the deal version on the quote with the latest version available in S4.
+REQ-003	Functional	High	If the deal version on the quote differs from the S4 response, the order processing must stop immediately and move to R&R.
+REQ-004	Functional	High	The system must display a message indicating the version mismatch, showing both the quote's deal version and the latest S4 deal version.
+REQ-005	Functional	High	Upon passing the deal version check, the system must validate UCID net prices against the S4 response.
+REQ-006	Functional	High	If any UCID has a different net price than expected, the order must also be stopped in R&R.
+REQ-007	Functional	Medium	The system should provide a business-readable reason for stopping an order due to UCID net price inconsistencies.
+REQ-008	Non-Functional	High	The validation outcome must be persisted for audit and troubleshooting purposes.
+REQ-009	Technical	High	The system must log S4 interaction details, including correlation references, whenever a quote is processed.
+REQ-010	Performance	Medium	The validation checks must complete during quote load to minimize processing delays.
+REQ-011	Constraint	High	Validation checks are only required during quote load and not during quote conversion.
+REQ-012	Assumption	Medium	The validation process is applicable to both manual and electronic orders originating from DQM.
+REQ-013	Constraint	High	Non-DQM flows, quotes without a deal reference, and quotes without UCID must be explicitly excluded from validation.
+REQ-014	Non-Functional	Medium	The system must handle service failure scenarios, ensuring that if S4 does not respond or returns incomplete data, the quote does not proceed silently.
+REQ-015	Technical	Medium	The system must ensure consistent behavior for repeated quote loads, even in the event of failure scenarios.
+3. Quote Validation
+ 
+4. Integration with S4 System
+ 
+5. Audit Logging
+ 
+6. Error Handling
+ 
+7. User Interface Requirements
+ 
+8. Requirement Pseudocode
+Requirement Pseudocode
+
+Flow 1: Validate Quote
+Inputs: quote
+Preconditions: quote contains deal reference and UCID
+Steps:
+1. FUNCTION ValidateQuote(quote)
+2. IF quote.dealReference IS EMPTY THEN
+3.     RETURN "Error: Deal reference is missing"
+4. IF quote.ucid IS EMPTY THEN
+5.     RETURN "Error: UCID is missing"
+6. RETURN "Validation successful"
+Postconditions: quote is validated for deal reference and UCID
+Error Paths: Missing deal reference or UCID
+
+Flow 2: Retrieve Latest Deal Version
+Inputs: quote
+Preconditions: quote must contain a deal reference
+Steps:
+1. FUNCTION GetLatestDealVersion(quote)
+2. CALL S4System.RetrieveDealVersion(quote.dealReference)
+3. IF S4System.Response IS NOT SUCCESS THEN
+4.     RETURN "Error: Unable to retrieve latest deal version"
+5. RETURN S4System.DealVersion
+Postconditions: Latest deal version retrieved from S4
+Error Paths: Failure to connect to S4
+
+Flow 3: Compare Deal Versions
+Inputs: quote, latestDealVersion
+Preconditions: latestDealVersion must be retrieved successfully
+Steps:
+1. FUNCTION CompareDealVersions(quote, latestDealVersion)
+2. IF quote.dealVersion != latestDealVersion THEN
+3.     RETURN "Error: Deal version mismatch"
+4. RETURN "Deal versions match"
+Postconditions: Deal versions compared
+Error Paths: Deal version mismatch
+
+Flow 4: Validate UCID Prices
+Inputs: quote, latestDealVersion
+Preconditions: quote must have valid UCID and latest deal version
+Steps:
+1. FUNCTION ValidateUCIDPrices(quote, latestDealVersion)
+2. FOR EACH ucid IN quote.ucid DO
+3.     IF ucid.price != latestDealVersion.price THEN
+4.         RETURN "Error: UCID price mismatch"
+5. RETURN "UCID prices validated successfully"
+Postconditions: UCID prices validated against latest deal version
+Error Paths: Price mismatch for any UCID
+
+Flow 5: Log Validation Outcome
+Inputs: quote, validationResult
+Preconditions: validationResult must be determined
+Steps:
+1. FUNCTION LogValidationOutcome(quote, validationResult)
+2. CALL AuditDatabase.Persist(quote, validationResult)
+3. RETURN "Validation outcome logged successfully"
+Postconditions: Validation outcome stored in audit database
+Error Paths: Failure to log outcome in the database
