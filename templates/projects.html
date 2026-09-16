@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Projects</h1>
+
+<div class="mb-3 row">
+  <div class="col-md-6">
+    <input type="search" id="searchTerm" class="form-control" placeholder="Search projects by name, technology, or business unit" />
+  </div>
+  <div class="col-auto">
+    <button id="searchBtn" class="btn btn-primary">Search</button>
+  </div>
+  <div class="col-auto">
+    <button id="newProjectBtn" class="btn btn-success">New Project</button>
+  </div>
+</div>
+
+<table class="table table-striped table-bordered" id="projectsTable">
+  <thead>
+    <tr>
+      <th data-sort="projectName">Project Name</th>
+      <th data-sort="technology">Technology</th>
+      <th data-sort="businessUnit">Business Unit</th>
+      <th data-sort="sdlcPhase">SDLC Phase</th>
+      <th data-sort="baselineEffortHours" class="text-end">Baseline Effort Hours</th>
+      <th data-sort="aiAssistedEffortHours" class="text-end">AI-Assisted Effort Hours</th>
+      <th data-sort="hoursSaved" class="text-end">Hours Saved</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="projectsBody">
+    <tr><td colspan="8" class="text-center">Loading...</td></tr>
+  </tbody>
+</table>
+
+<nav aria-label="Page navigation">
+  <ul class="pagination" id="pagination"></ul>
+</nav>
+
+<script>
+  let currentPage = 1;
+  let pageSize = 10;
+  let currentSort = null;
+  let currentSortDir = 'asc';
+
+  function formatNumber(num) {
+    return num?.toLocaleString(undefined, {maximumFractionDigits:2}) ?? '0';
+  }
+
+  function createActionButton(iconName, title, clickHandler) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-primary me-1';
+    btn.title = title;
+    const icon = document.createElement('span');
+    icon.className = 'material-icons';
+    icon.textContent = iconName;
+    btn.appendChild(icon);
+    btn.addEventListener('click', clickHandler);
+    return btn;
+  }
+
+  async function fetchJson(url, options = {}) {
+    const resp = await fetch(url, options);
+    if (!resp.ok) throw new Error(`Failed to fetch: ${resp.status}`);
+    return await resp.json();
+  }
+
+  async function loadProjects(page=1) {
+    const searchTerm = document.getElementById('searchTerm').value.trim();
+    currentPage = page;
+    let url = new URL('/api/projects', window.location.origin);
+    url.searchParams.set('page', currentPage);
+    url.searchParams.set('size', pageSize);
+    if (searchTerm) url.searchParams.set('searchTerm', searchTerm);
+    if (currentSort) url.searchParams.set('sort', currentSort + ',' + currentSortDir);
+
+    const tbody = document.getElementById('projectsBody');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+
+    try {
+      const data = await fetchJson(url);
+      tbody.innerHTML = '';
+      if (!data.content.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No projects found.</td></tr>';
+      } else {
+        data.content.forEach(proj => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${proj.projectName ?? ''}</td>
+            <td>${proj.technology ?? ''}</td>
+            <td>${proj.businessUnit ?? ''}</td>
+            <td>${proj.sdlcPhase ?? ''}</td>
+            <td class="text-end">${formatNumber(proj.baselineEffortHours)}</td>
+            <td class="text-end">${formatNumber(proj.aiAssistedEffortHours)}</td>
+            <td class="text-end">${formatNumber(proj.hoursSaved)}</td>
+            <td></td>
+          `;
+          const actionsTd = tr.querySelector('td:last-child');
+          actionsTd.appendChild(createActionButton('edit', 'Edit Project', () => editProject(proj.id)));
+          actionsTd.appendChild(createActionButton('delete', 'Delete Project', () => deleteProject(proj.id)));
+
+          tbody.appendChild(tr);
+        });
+      }
+      renderPagination(data.totalPages, data.number);
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center">Failed to load projects: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderPagination(totalPages, currentPage) {
+    const ul = document.getElementById('pagination');
+    ul.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    function createPageItem(page, label = null, disabled = false, active = false) {
+      const li = document.createElement('li');
+      li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.href = '#';
+      a.textContent = label ?? page;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        if (!disabled && page !== currentPage) loadProjects(page);
+      });
+      li.appendChild(a);
+      return li;
+    }
+
+    // Prev button
+    ul.appendChild(createPageItem(currentPage - 1, '«', currentPage === 1));
+
+    for (let p = 1; p <= totalPages; p++) {
+      ul.appendChild(createPageItem(p, null, false, p === currentPage));
+    }
+
+    // Next button
+    ul.appendChild(createPageItem(currentPage + 1, '»', currentPage === totalPages));
+  }
+
+  function editProject(id) {
+    window.location.href = `/projects/${encodeURIComponent(id)}/edit`; // Placeholder: implement later
+  }
+
+  async function deleteProject(id) {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
+      const resp = await fetch(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!resp.ok) throw new Error(`Failed to delete: ${resp.status}`);
+      alert('Project deleted');
+      loadProjects(currentPage);
+    } catch (e) {
+      alert(`Error deleting project: ${e.message}`);
+    }
+  }
+
+  document.getElementById('searchBtn').addEventListener('click', () => loadProjects(1));
+  document.getElementById('searchTerm').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadProjects(1); });
+  document.getElementById('newProjectBtn').addEventListener('click', () => alert('New project creation not implemented yet.'));
+
+  // Sorting on table headers
+  document.querySelectorAll('#projectsTable thead th[data-sort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const field = th.getAttribute('data-sort');
+      if (currentSort === field) {
+        currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort = field;
+        currentSortDir = 'asc';
+      }
+      loadProjects(1);
+    });
+  });
+
+  loadProjects();
+</script>
+{% endblock %}
