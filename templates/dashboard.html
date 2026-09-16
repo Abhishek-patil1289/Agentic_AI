@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Dashboard</h1>
+
+<div id="kpi-cards" class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card text-bg-primary h-100">
+      <div class="card-body">
+        <h5 class="card-title">Total Baseline Hours</h5>
+        <p class="card-text fs-4" id="totalBaselineEffortHours">Loading...</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card text-bg-success h-100">
+      <div class="card-body">
+        <h5 class="card-title">Total AI-Assisted Hours</h5>
+        <p class="card-text fs-4" id="totalAiAssistedEffortHours">Loading...</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card text-bg-warning h-100">
+      <div class="card-body">
+        <h5 class="card-title">Total Hours Saved</h5>
+        <p class="card-text fs-4" id="totalHoursSaved">Loading...</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card text-bg-info h-100">
+      <div class="card-body">
+        <h5 class="card-title">Average Savings %</h5>
+        <p class="card-text fs-4" id="averageSavingsPercent">Loading...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row gy-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Effort by SDLC Phase</div>
+      <div class="card-body">
+        <canvas id="chartSdlcPhase"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Baseline Effort by Technology</div>
+      <div class="card-body">
+        <canvas id="chartTechnology"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Hours Saved by Business Unit</div>
+      <div class="card-body">
+        <canvas id="chartBusinessUnit"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function fetchJson(url) {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Fetch error ${resp.status}`);
+    return await resp.json();
+  }
+
+  function formatNumber(num) {
+    return num?.toLocaleString(undefined, {maximumFractionDigits: 2}) ?? '0';
+  }
+
+  async function loadKPIs() {
+    try {
+      const kpis = await fetchJson('/api/analytics/kpis');
+      document.getElementById('totalBaselineEffortHours').textContent = formatNumber(kpis.totalBaselineEffortHours);
+      document.getElementById('totalAiAssistedEffortHours').textContent = formatNumber(kpis.totalAiAssistedEffortHours);
+      document.getElementById('totalHoursSaved').textContent = formatNumber(kpis.totalHoursSaved);
+      document.getElementById('averageSavingsPercent').textContent = formatNumber(kpis.averageSavingsPercent) + '%';
+    } catch (e) {
+      console.error('Failed to load KPIs', e);
+    }
+  }
+
+  async function loadChartSdlcPhase() {
+    try {
+      const data = await fetchJson('/api/analytics/effort-by-sdlc-phase');
+      const labels = Object.keys(data);
+      const baseline = labels.map(k => data[k].baselineEffortHours ?? 0);
+      const aiAssisted = labels.map(k => data[k].aiAssistedEffortHours ?? 0);
+      const hoursSaved = labels.map(k => data[k].hoursSaved ?? 0);
+
+      const ctx = document.getElementById('chartSdlcPhase').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Baseline Effort', data: baseline, backgroundColor: 'rgba(54, 162, 235, 0.7)' },
+            { label: 'AI-Assisted Effort', data: aiAssisted, backgroundColor: 'rgba(75, 192, 192, 0.7)' },
+            { label: 'Hours Saved', data: hoursSaved, backgroundColor: 'rgba(255, 206, 86, 0.7)' }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load SDLC Phase chart', e);
+    }
+  }
+
+  async function loadChartTechnology() {
+    try {
+      const data = await fetchJson('/api/analytics/effort-by-technology');
+      const labels = Object.keys(data);
+      const baseline = labels.map(k => data[k].baselineEffortHours ?? 0);
+
+      const ctx = document.getElementById('chartTechnology').getContext('2d');
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Baseline Effort',
+            data: baseline,
+            backgroundColor: labels.map((_, i) => `hsl(${(i*45) % 360}, 70%, 60%)`)
+          }]
+        },
+        options: { responsive: true }
+      });
+    } catch (e) {
+      console.error('Failed to load Technology chart', e);
+    }
+  }
+
+  async function loadChartBusinessUnit() {
+    try {
+      const data = await fetchJson('/api/analytics/effort-by-business-unit');
+      const labels = Object.keys(data);
+      const hoursSaved = labels.map(k => data[k].hoursSaved ?? 0);
+
+      const ctx = document.getElementById('chartBusinessUnit').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Hours Saved',
+            data: hoursSaved,
+            backgroundColor: labels.map((_, i) => `hsl(${(i*60) % 360}, 70%, 50%)`)
+          }]
+        },
+        options: { responsive: true }
+      });
+    } catch (e) {
+      console.error('Failed to load Business Unit chart', e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadKPIs();
+    loadChartSdlcPhase();
+    loadChartTechnology();
+    loadChartBusinessUnit();
+  });
+</script>
+{% endblock %}
